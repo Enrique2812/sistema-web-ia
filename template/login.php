@@ -9,7 +9,7 @@
     <meta name="author" content="pixelstrap">
     <link rel="icon" href="../assets/images/favicon.png" type="image/x-icon">
     <link rel="shortcut icon" href="../assets/images/favicon.png" type="image/x-icon">
-    <title>Dunzo - Premium Admin Template</title>
+    <title>Centro de Salud Año Nuevo Collique - Demo</title>
     <!-- Google font-->
     <link href="https://fonts.googleapis.com/css?family=Outfit:400,400i,500,500i,700,700i&amp;display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900&amp;display=swap" rel="stylesheet">
@@ -51,7 +51,7 @@
                     <label class="col-form-label">Contraseña</label>
                     <div class="form-input position-relative">
                       <input class="form-control" type="password" name="login[password]" required="" placeholder="*********">
-                      <div class="show-hide"><span class="show">                         </span></div>
+                      <div class="show-hide"><span class="mostrar">                         </span></div>
                     </div>
                   </div>
                   <div class="form-group mb-0">
