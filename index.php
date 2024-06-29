@@ -10,6 +10,10 @@ if (isset($_POST["buscarDni"])) {
   if (!$dni) {
     $null = true;
   }
+  if (isset($_POST["registrar"])) {
+    
+  }
+
 }
 if (isset($_POST["cerrar"])) {
   $_POST = array();
