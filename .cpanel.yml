@@ -1,4 +1,4 @@
 deployment:
   tasks:
-    - export DEPLOYPATH=/home4/alcorpsc/demo.alcorps.com/
+    - export DEPLOYPATH=/home4/alcorpsc/demo.alcorps.com
     -/bin/cp -R * $DEPLOYPATH
