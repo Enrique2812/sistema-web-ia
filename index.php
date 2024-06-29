@@ -1,13 +1,19 @@
 <?php
 include "controllers/conexion.php";
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if (isset($_POST["buscarDni"])) {
   $dni = $_POST['dni'];
-
+  $null = false;
   // Preparar la consulta SQL para buscar al paciente por DNI
   $sql = "SELECT * FROM paciente WHERE dni = $dni";
-
+  $resultado = $conn->query($sql);
+  $dni = $resultado->fetch_assoc();
+  if (!$dni) {
+    $null = true;
+  }
 }
-
+if (isset($_POST["cerrar"])) {
+  $_POST = array();
+}
 
 $conn->close();
 ?>
@@ -110,15 +116,7 @@ $conn->close();
                 <div class="modal-content">
                   <div class="modal-toggle-wrapper social-profile text-start dark-sign-up">
                     <h3 class="modal-header justify-content-center border-0">Cita Medica</h3>
-
-                    <?php
-
-                    if (isset($_POST['registrar'])) {
-                      echo "<pre>";
-                      var_dump($_POST);
-                      echo "</pre>";
-                    }
-                    ?>
+                    
                     <div class="modal-body">
                       <?php
                       if (!isset($_POST['dni'])) {
@@ -129,8 +127,8 @@ $conn->close();
                             <div class="col-md-6 pb-4">
                               <label class="form-label" for="dni">DNI<span class="txt-danger">*</span></label>
                               <div class="input-group">
-                                <input class="form-control" id="dni" type="number" placeholder="76780412" required name="dni">
-                                <button id="buscarBtn" class="btn btn-primary" type="submit">
+                                <input class="form-control" type="number" placeholder="76780412" required name="dni">
+                                <button id="buscarBtn" name="buscarDni" class="btn btn-primary" type="submit">
                                   <i class="fa fa-search" aria-hidden="true"></i> Buscar
                                 </button>
                               </div>
@@ -141,96 +139,206 @@ $conn->close();
                       }
                       if (isset($_POST['dni'])) {
                       ?>
-                        <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
-                          <!-- Sección de datos del paciente -->
-                          <div class="row d-flex justify-content-evenly">
-                            <div class="col-md-6 pb-4">
-                              <label class="form-label" for="dni">DNI<span class="txt-danger">*</span></label>
-                              <div class="input-group">
-                                <input class="form-control" id="dni" type="number" placeholder="76780412" required name="dni">
-                                <button id="buscarBtn" class="btn btn-primary" type="submit">
-                                  <i class="fa fa-search" aria-hidden="true"></i> Buscar
-                                </button>
+                        <?php if ($null == false) {
+                        ?>
+
+                          <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
+                            <!-- Sección de búsqueda por DNI -->
+                            <div class="row d-flex justify-content-evenly">
+                              <div class="col-md-6 pb-4">
+                                <label class="form-label" for="dni">DNI<span class="txt-danger">*</span></label>
+                                <div class="input-group">
+                                  <input id="dniModal" value="<?php echo $_POST["dni"] ?>" class="form-control" type="number" placeholder="76780412" required name="dni">
+                                  <button id="buscarBtn" name="buscarDni" class="btn btn-primary" type="submit">
+                                    <i class="fa fa-search" aria-hidden="true"></i> Buscar
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div class="row">
-                            <div class="col-md-4">
-                              <label class="form-label" for="nombre">Nombres</label>
-                              <input name="nombre" class="form-control" id="nombre" type="text" required="" readonly>
-                              <div class="valid-feedback">¡Se ve bien!</div>
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="apellido">Apellidos</label>
-                              <input name="apellido" class="form-control" id="apellido" type="text" required="" readonly>
-                              <div class="valid-feedback">¡Se ve bien!</div>
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="celular">Celular</label>
-                              <input name="celular" class="form-control" id="celular" type="number" min="111111111" max="999999999" required="" readonly>
-                              <div class="valid-feedback">¡Se ve bien!</div>
-                            </div>
-                          </div>
+                          </form>
+                          <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
+                            <!-- Sección de datos del paciente -->
 
-                          <!-- Más campos... -->
-
-                          <div class="row">
-                            <div class="col-md-12">
-                              <label class="form-label" for="direccion">Dirección</label>
-                              <input name="direccion" class="form-control" id="direccion" type="text" required="" readonly>
-                              <div class="valid-feedback">¡Se ve bien!</div>
-                            </div>
-                          </div>
-
-                          <div class="row">
-                            <div class="col-md-4 position-relative">
-                              <label class="form-label" for="genero">Género</label>
-                              <select name="genero" class="form-select" id="genero" required="" disabled>
-                                <option selected="" disabled="" value="">Seleccione...</option>
-                                <option>Masculino</option>
-                                <option>Femenino</option>
-                              </select>
-                              <div class="invalid-tooltip">Seleccione un estado válido.</div>
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="fecha_nacimiento">Fecha de nacimiento</label>
-                              <input name="fecha_nacimiento" class="form-control" id="fecha_nacimiento" type="date" readonly>
-                              <div class="invalid-tooltip">Ingrese una fecha.</div>
-                            </div>
-                            <div class="col-md-4 position-relative">
-                              <label class="form-label" for="Especialidad">Servicio</label>
-                              <select name="especialidad" class="form-select" id="Especialidad" required="" disabled>
-                                <option selected="" disabled="" value="">Seleccione...</option>
-                                <option>PSICOLOGIA</option>
-                                <option>MEDICINA GENERAL</option>
-                                <option>OBSTETRICIA</option>
-                                <option>NUTRICION</option>
-                                <option>ODONTOLOGIA</option>
-                                <option>CRECIMIENTO Y DESARROLLO</option>
-                                <option>INMUNIZACIONES</option>
-                              </select>
-                              <div class="invalid-tooltip">Seleccione un estado válido.</div>
-                            </div>
-                          </div>
-
-                          <div class="row">
-                            <div class="col-md-12">
-                              <div class="mb-3">
-                                <label class="form-label" for="exampleFormControlInput1">Correo electrónico</label>
-                                <input name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com" readonly>
+                            <div class="row">
+                              <div class="col-md-4">
+                                <label class="form-label" for="nombre">Nombres</label>
+                                <input value="<?php echo $dni["nombre"] ?>" name="nombre" class="form-control" id="nombre" type="text" required="" readonly>
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="apellido">Apellidos</label>
+                                <input value="<?php echo $dni["apellido"] ?>" name="apellido" class="form-control" id="apellido" type="text" required="" readonly>
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="celular">Celular</label>
+                                <input value="<?php echo $dni["celular"] ?>" name="celular" class="form-control" id="celular" type="number" min="111111111" max="999999999" required="" readonly>
+                                <div class="valid-feedback">¡Se ve bien!</div>
                               </div>
                             </div>
-                          </div>
 
-                          <div class="col-md-12">
-                            <div class="form-check mb-3">
-                              <input class="form-check-input" id="flexCheckDefault" type="checkbox" value="" required>
-                              <label class="form-check-label d-block mb-0" for="flexCheckDefault">Acepta nuestros Términos y Política de Privacidad haciendo clic en Enviar a continuación.</label>
+                            <!-- Más campos... -->
+
+                            <div class="row">
+                              <div class="col-md-12">
+                                <label class="form-label" for="direccion">Dirección</label>
+                                <input value="<?php echo $dni["direccion"] ?>" name="direccion" class="form-control" id="direccion" type="text" required="" readonly>
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
                             </div>
-                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Cerrar</button>
-                            <button name="registrar" class="btn btn-primary" type="submit" disabled>Registrar</button>
-                          </div>
-                        </form>
+
+                            <div class="row">
+                              <div class="col-md-4 position-relative">
+                                <label class="form-label" for="genero">Género</label>
+                                <select name="genero" class="form-select" id="genero" required="" disabled>
+                                  <option selected="" disabled="" value="">Seleccione...</option>
+                                  <option>Masculino</option>
+                                  <option>Femenino</option>
+                                </select>
+                                <div class="invalid-tooltip">Seleccione un estado válido.</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="fecha_nacimiento">Fecha de nacimiento</label>
+                                <input name="fecha_nacimiento" class="form-control" id="fecha_nacimiento" type="date" readonly>
+                                <div class="invalid-tooltip">Ingrese una fecha.</div>
+                              </div>
+                              <div class="col-md-4 position-relative">
+                                <label class="form-label" for="Especialidad">Servicio</label>
+                                <select name="especialidad" class="form-select" id="Especialidad" required="" disabled>
+                                  <option selected="" disabled="" value="">Seleccione...</option>
+                                  <option>PSICOLOGIA</option>
+                                  <option>MEDICINA GENERAL</option>
+                                  <option>OBSTETRICIA</option>
+                                  <option>NUTRICION</option>
+                                  <option>ODONTOLOGIA</option>
+                                  <option>CRECIMIENTO Y DESARROLLO</option>
+                                  <option>INMUNIZACIONES</option>
+                                </select>
+                                <div class="invalid-tooltip">Seleccione un estado válido.</div>
+                              </div>
+                            </div>
+
+                            <div class="row">
+                              <div class="col-md-12">
+                                <div class="mb-3">
+                                  <label class="form-label" for="exampleFormControlInput1">Correo electrónico</label>
+                                  <input value="<?php echo $dni["correo"] ?>" name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com" readonly>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="col-md-12">
+                              <div class="form-check mb-3">
+                                <input value="<?php echo $dni["dni"] ?>" class="form-check-input" id="flexCheckDefault" type="checkbox" value="" required>
+                                <label class="form-check-label d-block mb-0" for="flexCheckDefault">Acepta nuestros Términos y Política de Privacidad haciendo clic en Enviar a continuación.</label>
+                              </div>
+                              <a href="index.php" class="btn btn-secondary" type="buttom">Cerrar</a>
+                              <button name="registrar" class="btn btn-primary" type="submit">Registrar</button>
+                            </div>
+                          </form>
+                        <?php
+                        } ?>
+                        <?php
+                        if ($null != false) {
+                        ?>
+
+                          <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
+                            <!-- Sección de búsqueda por DNI -->
+                            <div class="row d-flex justify-content-evenly">
+                              <div class="col-md-6 pb-4">
+                                <label class="form-label" for="dni">DNI<span class="txt-danger">*</span></label>
+                                <div class="input-group">
+                                  <input  id="dniModal" value="<?php echo $_POST["dni"] ?>" class="form-control" type="number" placeholder="76780412" required name="dni">
+                                  <button id="buscarBtn" name="buscarDni" class="btn btn-primary" type="submit">
+                                    <i class="fa fa-search" aria-hidden="true"></i> Buscar
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </form>
+                          <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
+                            <!-- Sección de datos del paciente -->
+
+                            <div class="row">
+                              <div class="col-md-4">
+                                <label class="form-label" for="nombre">Nombres</label>
+                                <input name="nombre" class="form-control" id="nombre" type="text" required="" >
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="apellido">Apellidos</label>
+                                <input name="apellido" class="form-control" id="apellido" type="text" required="" >
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="celular">Celular</label>
+                                <input name="celular" class="form-control" id="celular" type="number" min="111111111" max="999999999" required="" >
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                            </div>
+
+                            <!-- Más campos... -->
+
+                            <div class="row">
+                              <div class="col-md-12">
+                                <label class="form-label" for="direccion">Dirección</label>
+                                <input name="direccion" class="form-control" id="direccion" type="text" required="" >
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                            </div>
+
+                            <div class="row">
+                              <div class="col-md-4 position-relative">
+                                <label class="form-label" for="genero">Género</label>
+                                <select name="genero" class="form-select" id="genero" required="" >
+                                  <option selected="" disabled="" value="">Seleccione...</option>
+                                  <option>Masculino</option>
+                                  <option>Femenino</option>
+                                </select>
+                                <div class="invalid-tooltip">Seleccione un estado válido.</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="fecha_nacimiento">Fecha de nacimiento</label>
+                                <input name="fecha_nacimiento" class="form-control" id="fecha_nacimiento" type="date" >
+                                <div class="invalid-tooltip">Ingrese una fecha.</div>
+                              </div>
+                              <div class="col-md-4 position-relative">
+                                <label class="form-label" for="Especialidad">Servicio</label>
+                                <select name="especialidad" class="form-select" id="Especialidad" required="" >
+                                  <option selected="" disabled="" value="">Seleccione...</option>
+                                  <option>PSICOLOGIA</option>
+                                  <option>MEDICINA GENERAL</option>
+                                  <option>OBSTETRICIA</option>
+                                  <option>NUTRICION</option>
+                                  <option>ODONTOLOGIA</option>
+                                  <option>CRECIMIENTO Y DESARROLLO</option>
+                                  <option>INMUNIZACIONES</option>
+                                </select>
+                                <div class="invalid-tooltip">Seleccione un estado válido.</div>
+                              </div>
+                            </div>
+
+                            <div class="row">
+                              <div class="col-md-12">
+                                <div class="mb-3">
+                                  <label class="form-label" for="exampleFormControlInput1">Correo electrónico</label>
+                                  <input name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com" >
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="col-md-12">
+                              <div class="form-check mb-3">
+                                <input class="form-check-input" id="flexCheckDefault" type="checkbox" value="" required>
+                                <label class="form-check-label d-block mb-0" for="flexCheckDefault">Acepta nuestros Términos y Política de Privacidad haciendo clic en Enviar a continuación.</label>
+                              </div>
+                              <a href="index.php" class="btn btn-secondary" type="buttom">Cerrar</a>
+                              <button name="registrar" class="btn btn-primary" type="submit">Registrar</button>
+                            </div>
+                          </form>
+                        <?php
+                        }
+                        ?>
                       <?php
                       }
                       ?>
@@ -238,25 +346,29 @@ $conn->close();
 
                     <script>
                       document.addEventListener('DOMContentLoaded', function() {
-                        // Obtener el modal de Bootstrap por su ID
-                        var modal = document.getElementById('exampleModalgetbootstrap');
+                        var dni = document.getElementById('dniModal');
+                        if (dni) {
 
-                        // Mostrar el modal usando el método modal de Bootstrap
-                        var myModal = new bootstrap.Modal(modal);
-                        myModal.show();
+                          // Obtener el modal de Bootstrap por su ID
+                          var modal = document.getElementById('exampleModalgetbootstrap');
 
-                        // Opcional: cerrar modal al hacer clic en el botón de cierre (si lo deseas)
-                        var closeBtn = modal.querySelector('.modal-header .close');
-                        closeBtn.addEventListener('click', function() {
-                          myModal.hide();
-                        });
+                          // Mostrar el modal usando el método modal de Bootstrap
+                          var myModal = new bootstrap.Modal(modal);
+                          myModal.show();
 
-                        // Opcional: cerrar modal al hacer clic fuera de él
-                        modal.addEventListener('click', function(event) {
-                          if (event.target === modal) {
+                          // Opcional: cerrar modal al hacer clic en el botón de cierre (si lo deseas)
+                          var closeBtn = modal.querySelector('.modal-header .close');
+                          closeBtn.addEventListener('click', function() {
                             myModal.hide();
-                          }
-                        });
+                          });
+
+                          // Opcional: cerrar modal al hacer clic fuera de él
+                          modal.addEventListener('click', function(event) {
+                            if (event.target === modal) {
+                              myModal.hide();
+                            }
+                          });
+                        }
                       });
                     </script>
                   </div>
