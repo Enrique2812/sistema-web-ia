@@ -1,19 +1,102 @@
 <?php
 include "controllers/conexion.php";
+$null = false;
 if (isset($_POST["buscarDni"])) {
-  $dni = $_POST['dni'];
-  $null = false;
+  $dniB = $_POST['dni'];
   // Preparar la consulta SQL para buscar al paciente por DNI
-  $sql = "SELECT * FROM paciente WHERE dni = $dni";
+  $sql = "SELECT * FROM paciente WHERE dni = $dniB";
   $resultado = $conn->query($sql);
   $dni = $resultado->fetch_assoc();
   if (!$dni) {
     $null = true;
-  }
-  if (isset($_POST["registrar"])) {
+  }  
+}
+
+if (isset($_POST["registrar"])) {
+  $nombre = $_POST['nombre'];
+  $apellido = $_POST['apellido'];
+  $dnip = $_POST['dnih'];
+  $celular = $_POST['celular'];
+  $departamento = $_POST['departamento'];
+  $provincia = $_POST['provincia'];
+  $distrito = $_POST['distrito'];
+  $direccion = $_POST['direccion'];
+  $genero = $_POST['genero'];
+  $fecha_nacimiento = $_POST['fecha_nacimiento'];
+  $correo = $_POST['correo'];
+  
+  echo "<pre>";
+  echo "hola como estas";
+  echo "</pre>"; 
+  if ($null != true) {
+    // El paciente no existe, registrar al nuevo paciente
+      
+    $insert = "INSERT INTO paciente (dni, nombre, apellido, celular, departamento, provincia, distrito, direccion, genero, fecha_nacimiento, correo)
+               VALUES ('$dnip', '$nombre', '$apellido', '$celular', '$departamento', '$provincia', '$distrito', '$direccion', '$genero', '$fecha_nacimiento', '$correo')";
+    echo $insert;
+    $conn->query($insert);
     
+    $idPaciente = $conn->insert_id; // Obtener el ID del nuevo paciente
+  } else {
+    // El paciente ya existe
+    $idPaciente = $_POST['idpaciente'];
   }
 
+  // Obtener un médico disponible al azar
+  $idMedico = rand(1, 2);
+
+  // Verificar si el médico tiene citas en los próximos tres días
+  $sqlCitas = "SELECT * FROM cita WHERE medicos_id = $idMedico AND fecha >= CURDATE() AND fecha <= DATE_ADD(CURDATE(), INTERVAL 3 DAY) ORDER BY fecha, hora";
+  $resultCitas = $conn->query($sqlCitas);
+
+  $horarioMananaInicio = "07:00:00";
+  $horarioMananaFin = "13:00:00";
+  $horarioTardeInicio = "13:30:00";
+  $horarioTardeFin = "19:00:00";
+  $duracionCita = 20 * 60; // 20 minutos en segundos
+
+  $horaProximaDisponible = null;
+
+  if ($resultCitas->num_rows > 0) {
+    // El médico tiene citas, buscar la próxima hora disponible
+    while ($cita = $resultCitas->fetch_assoc()) {
+      $fechaCita = $cita['fecha'];
+      $horaCita = $cita['hora'];
+
+      if ($horaProximaDisponible === null) {
+        $horaProximaDisponible = date("H:i:s", strtotime($horaCita) + $duracionCita);
+      } else {
+        $horaActual = date("H:i:s", strtotime($horaProximaDisponible) + $duracionCita);
+        if ($horaActual >= $horarioMananaInicio && $horaActual <= $horarioMananaFin) {
+          $horaProximaDisponible = $horaActual;
+        } elseif ($horaActual >= $horarioTardeInicio && $horaActual <= $horarioTardeFin) {
+          $horaProximaDisponible = $horaActual;
+        } else {
+          $horaProximaDisponible = null;
+        }
+      }
+    }
+  } else {
+    // El médico no tiene citas, asignar la primera hora disponible
+    $horaProximaDisponible = $horarioMananaInicio;
+  }
+
+  // Verificar si la hora próxima disponible es válida
+  if ($horaProximaDisponible !== null) {
+    $fechaProximaDisponible = date("Y-m-d");
+
+    $insertCita = "INSERT INTO cita (fecha, hora, estado, medicos_id, pacientes_id) VALUES ('$fechaProximaDisponible', '$horaProximaDisponible', 'pendiente', $idMedico, $idPaciente)";
+    $conn->query($insertCita);
+
+    $asunto = "Cita Medica";
+    $msg = "Hola ".$nombre." le saludamos del centro de salud Año nuevo de Collique para comunicarle la fecha y hora de la cita medica.\nFecha: ".$fechaProximaDisponible."\nHora : ".$horaProximaDisponible;
+    $header = "From: noreply@example.com" . "\r\n";
+    $header .= "Reply-To: noreply@example.com" . "\r\n";
+    $header .= "X-Mailer: PHP/" . phpversion();
+    $mail = @mail($correo, $asunto, $msg, $header);
+  } else {
+    echo "No hay disponibilidad de citas en los próximos tres días.";
+  }
 }
 if (isset($_POST["cerrar"])) {
   $_POST = array();
@@ -110,7 +193,13 @@ $conn->close();
                 </h4>
                 <ul class="btn-home-list">
                   <li><button class="btn btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#exampleModalgetbootstrap" data-whatever="@getbootstrap">Cita Medica</button>
-
+                    <?php
+                    echo "<pre>";
+                    var_dump($_POST);
+                    echo "</pre>";
+                    echo "<pre>";
+                    echo $insert;
+                    echo "</pre>";  ?>
                   </li>
                 </ul>
               </div>
@@ -120,7 +209,7 @@ $conn->close();
                 <div class="modal-content">
                   <div class="modal-toggle-wrapper social-profile text-start dark-sign-up">
                     <h3 class="modal-header justify-content-center border-0">Cita Medica</h3>
-                    
+
                     <div class="modal-body">
                       <?php
                       if (!isset($_POST['dni'])) {
@@ -144,6 +233,7 @@ $conn->close();
                       if (isset($_POST['dni'])) {
                       ?>
                         <?php if ($null == false) {
+
                         ?>
 
                           <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
@@ -163,6 +253,8 @@ $conn->close();
                           <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
                             <!-- Sección de datos del paciente -->
 
+                            <input hidden value="<?php echo $_POST["dni"] ?>" name="dnih">
+                            <input hidden value="<?php echo $dni["id"] ?>" name="idpaciente">
                             <div class="row">
                               <div class="col-md-4">
                                 <label class="form-label" for="nombre">Nombres</label>
@@ -180,9 +272,6 @@ $conn->close();
                                 <div class="valid-feedback">¡Se ve bien!</div>
                               </div>
                             </div>
-
-                            <!-- Más campos... -->
-
                             <div class="row">
                               <div class="col-md-12">
                                 <label class="form-label" for="direccion">Dirección</label>
@@ -194,21 +283,25 @@ $conn->close();
                             <div class="row">
                               <div class="col-md-4 position-relative">
                                 <label class="form-label" for="genero">Género</label>
+                                <?php
+                                $genero = isset($dni['genero']) ? $dni['genero'] : '';
+
+                                $generoTexto = ($genero == 'F') ? 'Femenino' : (($genero == 'M') ? 'Masculino' : '');
+
+                                ?>
                                 <select name="genero" class="form-select" id="genero" required="" disabled>
-                                  <option selected="" disabled="" value="">Seleccione...</option>
-                                  <option>Masculino</option>
-                                  <option>Femenino</option>
+                                  <option selected=""><?php echo $generoTexto; ?></option>
                                 </select>
                                 <div class="invalid-tooltip">Seleccione un estado válido.</div>
                               </div>
                               <div class="col-md-4">
                                 <label class="form-label" for="fecha_nacimiento">Fecha de nacimiento</label>
-                                <input name="fecha_nacimiento" class="form-control" id="fecha_nacimiento" type="date" readonly>
+                                <input name="fecha_nacimiento" value="<?php echo $dni['fecha_nacimiento'] ?>" class="form-control" id="fecha_nacimiento" type="date" readonly>
                                 <div class="invalid-tooltip">Ingrese una fecha.</div>
                               </div>
                               <div class="col-md-4 position-relative">
                                 <label class="form-label" for="Especialidad">Servicio</label>
-                                <select name="especialidad" class="form-select" id="Especialidad" required="" disabled>
+                                <select name="especialidad" class="form-select" id="Especialidad" required="">
                                   <option selected="" disabled="" value="">Seleccione...</option>
                                   <option>PSICOLOGIA</option>
                                   <option>MEDICINA GENERAL</option>
@@ -226,7 +319,7 @@ $conn->close();
                               <div class="col-md-12">
                                 <div class="mb-3">
                                   <label class="form-label" for="exampleFormControlInput1">Correo electrónico</label>
-                                  <input value="<?php echo $dni["correo"] ?>" name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com" readonly>
+                                  <input value="<?php echo $dni["correo"] ?>" name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com">
                                 </div>
                               </div>
                             </div>
@@ -252,7 +345,7 @@ $conn->close();
                               <div class="col-md-6 pb-4">
                                 <label class="form-label" for="dni">DNI<span class="txt-danger">*</span></label>
                                 <div class="input-group">
-                                  <input  id="dniModal" value="<?php echo $_POST["dni"] ?>" class="form-control" type="number" placeholder="76780412" required name="dni">
+                                  <input id="dniModal" value="<?php echo $_POST["dni"] ?>" class="form-control" type="number" placeholder="76780412" required name="dni">
                                   <button id="buscarBtn" name="buscarDni" class="btn btn-primary" type="submit">
                                     <i class="fa fa-search" aria-hidden="true"></i> Buscar
                                   </button>
@@ -262,31 +355,47 @@ $conn->close();
                           </form>
                           <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
                             <!-- Sección de datos del paciente -->
+                            <input hidden value="<?php echo $_POST["dni"] ?>" name="dnih">
 
                             <div class="row">
                               <div class="col-md-4">
                                 <label class="form-label" for="nombre">Nombres</label>
-                                <input name="nombre" class="form-control" id="nombre" type="text" required="" >
+                                <input name="nombre" class="form-control" id="nombre" type="text" required="">
                                 <div class="valid-feedback">¡Se ve bien!</div>
                               </div>
                               <div class="col-md-4">
                                 <label class="form-label" for="apellido">Apellidos</label>
-                                <input name="apellido" class="form-control" id="apellido" type="text" required="" >
+                                <input name="apellido" class="form-control" id="apellido" type="text" required="">
                                 <div class="valid-feedback">¡Se ve bien!</div>
                               </div>
                               <div class="col-md-4">
                                 <label class="form-label" for="celular">Celular</label>
-                                <input name="celular" class="form-control" id="celular" type="number" min="111111111" max="999999999" required="" >
+                                <input name="celular" class="form-control" id="celular" type="number" min="111111111" max="999999999" required="">
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                            </div>
+                            <div class="row">
+                              <div class="col-md-4">
+                                <label class="form-label" for="departamento">Departameto</label>
+                                <input name="departamento" class="form-control" id="departamento" type="text" required="">
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="provincia">Provincia</label>
+                                <input name="provincia" class="form-control" id="provincia" type="text" required="">
+                                <div class="valid-feedback">¡Se ve bien!</div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label" for="distrito">Distrito</label>
+                                <input name="distrito" class="form-control" id="distrito" type="text" required="">
                                 <div class="valid-feedback">¡Se ve bien!</div>
                               </div>
                             </div>
 
-                            <!-- Más campos... -->
-
                             <div class="row">
                               <div class="col-md-12">
                                 <label class="form-label" for="direccion">Dirección</label>
-                                <input name="direccion" class="form-control" id="direccion" type="text" required="" >
+                                <input name="direccion" class="form-control" id="direccion" type="text" required="">
                                 <div class="valid-feedback">¡Se ve bien!</div>
                               </div>
                             </div>
@@ -294,21 +403,21 @@ $conn->close();
                             <div class="row">
                               <div class="col-md-4 position-relative">
                                 <label class="form-label" for="genero">Género</label>
-                                <select name="genero" class="form-select" id="genero" required="" >
+                                <select name="genero" class="form-select" id="genero" required="">
                                   <option selected="" disabled="" value="">Seleccione...</option>
-                                  <option>Masculino</option>
-                                  <option>Femenino</option>
+                                  <option value="M">Masculino</option>
+                                  <option value="F">Femenino</option>
                                 </select>
                                 <div class="invalid-tooltip">Seleccione un estado válido.</div>
                               </div>
                               <div class="col-md-4">
                                 <label class="form-label" for="fecha_nacimiento">Fecha de nacimiento</label>
-                                <input name="fecha_nacimiento" class="form-control" id="fecha_nacimiento" type="date" >
+                                <input name="fecha_nacimiento" class="form-control" id="fecha_nacimiento" type="date">
                                 <div class="invalid-tooltip">Ingrese una fecha.</div>
                               </div>
                               <div class="col-md-4 position-relative">
                                 <label class="form-label" for="Especialidad">Servicio</label>
-                                <select name="especialidad" class="form-select" id="Especialidad" required="" >
+                                <select name="especialidad" class="form-select" id="Especialidad" required="">
                                   <option selected="" disabled="" value="">Seleccione...</option>
                                   <option>PSICOLOGIA</option>
                                   <option>MEDICINA GENERAL</option>
@@ -326,7 +435,7 @@ $conn->close();
                               <div class="col-md-12">
                                 <div class="mb-3">
                                   <label class="form-label" for="exampleFormControlInput1">Correo electrónico</label>
-                                  <input name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com" >
+                                  <input name="correo" class="form-control" id="exampleFormControlInput1" type="email" placeholder="Dunzotheme@gmail.com">
                                 </div>
                               </div>
                             </div>
