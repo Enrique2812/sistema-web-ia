@@ -9,7 +9,7 @@ if (isset($_POST["buscarDni"])) {
   $dni = $resultado->fetch_assoc();
   if (!$dni) {
     $null = true;
-  }  
+  }
 }
 
 if (isset($_POST["registrar"])) {
@@ -24,18 +24,18 @@ if (isset($_POST["registrar"])) {
   $genero = $_POST['genero'];
   $fecha_nacimiento = $_POST['fecha_nacimiento'];
   $correo = $_POST['correo'];
-  
+
   echo "<pre>";
   echo "hola como estas";
-  echo "</pre>"; 
+  echo "</pre>";
   if ($null != true) {
     // El paciente no existe, registrar al nuevo paciente
-      
+
     $insert = "INSERT INTO paciente (dni, nombre, apellido, celular, departamento, provincia, distrito, direccion, genero, fecha_nacimiento, correo)
                VALUES ('$dnip', '$nombre', '$apellido', '$celular', '$departamento', '$provincia', '$distrito', '$direccion', '$genero', '$fecha_nacimiento', '$correo')";
     echo $insert;
     $conn->query($insert);
-    
+
     $idPaciente = $conn->insert_id; // Obtener el ID del nuevo paciente
   } else {
     // El paciente ya existe
@@ -45,17 +45,22 @@ if (isset($_POST["registrar"])) {
   // Obtener un médico disponible al azar
   $idMedico = rand(1, 2);
 
-  // Verificar si el médico tiene citas en los próximos tres días
-  $sqlCitas = "SELECT * FROM cita WHERE medicos_id = $idMedico AND fecha >= CURDATE() AND fecha <= DATE_ADD(CURDATE(), INTERVAL 3 DAY) ORDER BY fecha, hora";
+  // Obtener el turno del médico
+  $sqlTurno = "SELECT turno FROM medico WHERE id = $idMedico";
+  $resultadoTurno = $conn->query($sqlTurno);
+  $medico = $resultadoTurno->fetch_assoc();
+  $turno = $medico['turno'];
+
+  $horarioInicio = $turno == 'M' ? "07:00:00" : "13:30:00";
+  $horarioFin = $turno == 'M' ? "13:00:00" : "19:00:00";
+  $duracionCita = 20 * 60; // 20 minutos en segundos
+  
+  // Verificar si el médico tiene citas en los próximos días a partir de tres días en adelante
+  $sqlCitas = "SELECT * FROM cita WHERE medicos_id = $idMedico AND fecha >= DATE_ADD(CURDATE(), INTERVAL 3 DAY) ORDER BY fecha, hora";
   $resultCitas = $conn->query($sqlCitas);
 
-  $horarioMananaInicio = "07:00:00";
-  $horarioMananaFin = "13:00:00";
-  $horarioTardeInicio = "13:30:00";
-  $horarioTardeFin = "19:00:00";
-  $duracionCita = 20 * 60; // 20 minutos en segundos
-
-  $horaProximaDisponible = null;
+  $horaProximaDisponible = $horarioInicio;
+  $fechaProximaDisponible = date("Y-m-d", strtotime("+3 days"));
 
   if ($resultCitas->num_rows > 0) {
     // El médico tiene citas, buscar la próxima hora disponible
@@ -63,33 +68,26 @@ if (isset($_POST["registrar"])) {
       $fechaCita = $cita['fecha'];
       $horaCita = $cita['hora'];
 
-      if ($horaProximaDisponible === null) {
+      if ($fechaCita == $fechaProximaDisponible && strtotime($horaCita) < strtotime($horarioFin)) {
         $horaProximaDisponible = date("H:i:s", strtotime($horaCita) + $duracionCita);
-      } else {
-        $horaActual = date("H:i:s", strtotime($horaProximaDisponible) + $duracionCita);
-        if ($horaActual >= $horarioMananaInicio && $horaActual <= $horarioMananaFin) {
-          $horaProximaDisponible = $horaActual;
-        } elseif ($horaActual >= $horarioTardeInicio && $horaActual <= $horarioTardeFin) {
-          $horaProximaDisponible = $horaActual;
-        } else {
-          $horaProximaDisponible = null;
+        if (strtotime($horaProximaDisponible) > strtotime($horarioFin)) {
+          $horaProximaDisponible = $horarioInicio;
+          $fechaProximaDisponible = date("Y-m-d", strtotime($fechaProximaDisponible . ' + 1 day'));
         }
+      } else {
+        $horaProximaDisponible = $horarioInicio;
+        $fechaProximaDisponible = date("Y-m-d", strtotime($fechaCita));
       }
     }
-  } else {
-    // El médico no tiene citas, asignar la primera hora disponible
-    $horaProximaDisponible = $horarioMananaInicio;
   }
 
   // Verificar si la hora próxima disponible es válida
   if ($horaProximaDisponible !== null) {
-    $fechaProximaDisponible = date("Y-m-d");
-
     $insertCita = "INSERT INTO cita (fecha, hora, estado, medicos_id, pacientes_id) VALUES ('$fechaProximaDisponible', '$horaProximaDisponible', 'pendiente', $idMedico, $idPaciente)";
     $conn->query($insertCita);
 
     $asunto = "Cita Medica";
-    $msg = "Hola ".$nombre." le saludamos del centro de salud Año nuevo de Collique para comunicarle la fecha y hora de la cita medica.\nFecha: ".$fechaProximaDisponible."\nHora : ".$horaProximaDisponible;
+    $msg = "Hola " . $nombre . " le saludamos del centro de salud Año nuevo de Collique para comunicarle la fecha y hora de la cita medica.\nFecha: " . $fechaProximaDisponible . "\nHora : " . $horaProximaDisponible;
     $header = "From: noreply@example.com" . "\r\n";
     $header .= "Reply-To: noreply@example.com" . "\r\n";
     $header .= "X-Mailer: PHP/" . phpversion();
@@ -193,13 +191,7 @@ $conn->close();
                 </h4>
                 <ul class="btn-home-list">
                   <li><button class="btn btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#exampleModalgetbootstrap" data-whatever="@getbootstrap">Cita Medica</button>
-                    <?php
-                    echo "<pre>";
-                    var_dump($_POST);
-                    echo "</pre>";
-                    echo "<pre>";
-                    echo $insert;
-                    echo "</pre>";  ?>
+
                   </li>
                 </ul>
               </div>
@@ -338,7 +330,6 @@ $conn->close();
                         <?php
                         if ($null != false) {
                         ?>
-
                           <form id="citaForm" method="post" class="row g-3 needs-validation" novalidate="">
                             <!-- Sección de búsqueda por DNI -->
                             <div class="row d-flex justify-content-evenly">

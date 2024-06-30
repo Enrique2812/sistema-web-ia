@@ -29,14 +29,13 @@ if (isset($_POST['submit'])) {
       // echo $sql;
       $stmt = $conn->query($sql);
       $usuario = $stmt->fetch_assoc();
-      echo $usuario['contraseña'];
+      // echo $usuario['contraseña'];
       if ($usuario) {
         if ($contra==$usuario['contraseña']) {
-          $_SESSION['id'] = $usuario['id'];
+          $_SESSION['id'] = $usuario['usuario_id'];
           $_SESSION['nombre'] = $usuario['nombre'];
           $_SESSION['apellido'] = $usuario['apellido'];
           $_SESSION['correo'] = $usuario['correo'];
-
           header("Location: home.php");
           exit();
         } else {
@@ -55,7 +54,6 @@ if (isset($_POST['submit'])) {
                           <button class="p-0 border-0 me-2 ms-auto" type="button" data-bs-dismiss="alert" aria-label="Close"><span class="bg-danger text-white px-3 py-1" aria-hidden="true"><i class="fa fa-times" aria-hidden="true"></i></span></button>
                       </div>';
       }
-      $stmt->close();
     }
   }
 }
